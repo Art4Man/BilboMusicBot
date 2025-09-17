@@ -64,7 +64,14 @@ async def cmd_start(message: Message):
             pattern=r'([*_`\[\]])',
             repl=r'\\\1', 
             string=playlist_name)
-        await message.answer(f"{EMOJIS.HEADPHONE.value} **{escaped_name}** Playlist shared with you:")
+        
+        # Get rating stats
+        rating_stats = ps.get_playlist_rating_stats(playlist_id)
+        rating_text = ""
+        if rating_stats and rating_stats['total_ratings'] > 0:
+            rating_text = f" ⭐ {rating_stats['average_stars']} ({rating_stats['total_ratings']} ratings)"
+        
+        await message.answer(f"{EMOJIS.HEADPHONE.value} **{escaped_name}**{rating_text} Playlist shared with you:")
         cover = ps.get_cover_image_by_playlist_id(playlist_id)
         if cover:
             await message.answer_photo(cover, caption=f"{EMOJIS.MUSIC.value} Playlist Cover")

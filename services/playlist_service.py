@@ -376,3 +376,91 @@ def rename_playlist(user_id, old_name, new_name):
     else:
         logger.debug(f"Successfully rename {old_name} playlist to {new_name} for user_id = {user_id}") 
         return True
+
+
+def add_playlist_rating(user_id, playlist_id, stars_given, transaction_id=None):
+    """
+    Add or update a star rating for a playlist.
+    
+    Parameters:
+        user_id (int): Internal user ID giving the rating.
+        playlist_id (int): Playlist ID being rated.
+        stars_given (int): Number of stars given (must be positive).
+        transaction_id (str, optional): Telegram Stars transaction ID.
+    
+    Returns:
+        bool | None: True if the rating was added/updated; None if a database error occurred.
+    """
+    try:
+        with sqlite3.connect(sqlite_db_path) as conn:
+            cur = conn.cursor()
+            cur.execute("""INSERT OR REPLACE INTO playlist_ratings 
+                          (user_id, playlist_id, stars_given, transaction_id) 
+                          VALUES (?, ?, ?, ?)""", 
+                       (user_id, playlist_id, stars_given, transaction_id))
+    except sqlite3.Error:
+        logger.error(f"Failed to add rating for playlist_id={playlist_id} by user_id={user_id}", exc_info=True)
+        return None
+    else:
+        logger.debug(f"Successfully added {stars_given} stars for playlist_id={playlist_id} by user_id={user_id}")
+        return True
+
+
+def get_playlist_rating_stats(playlist_id):
+    """
+    Get rating statistics for a playlist.
+    
+    Parameters:
+        playlist_id (int): Playlist ID to get stats for.
+    
+    Returns:
+        dict | None: Dictionary with 'total_stars', 'total_ratings', 'average_stars' or None on error.
+    """
+    try:
+        with sqlite3.connect(sqlite_db_path) as conn:
+            cur = conn.cursor()
+            cur.execute("""SELECT COUNT(*) as total_ratings, 
+                                 SUM(stars_given) as total_stars,
+                                 AVG(stars_given) as average_stars
+                          FROM playlist_ratings 
+                          WHERE playlist_id = ?""", (playlist_id,))
+            result = cur.fetchone()
+            
+            if result and result[0] > 0:  # Check if there are any ratings
+                return {
+                    'total_ratings': result[0],
+                    'total_stars': result[1] or 0,
+                    'average_stars': round(result[2], 1) if result[2] else 0.0
+                }
+            else:
+                return {
+                    'total_ratings': 0,
+                    'total_stars': 0,
+                    'average_stars': 0.0
+                }
+    except sqlite3.Error:
+        logger.error(f"Failed to get rating stats for playlist_id={playlist_id}", exc_info=True)
+        return None
+
+
+def get_user_playlist_rating(user_id, playlist_id):
+    """
+    Get a user's rating for a specific playlist.
+    
+    Parameters:
+        user_id (int): Internal user ID.
+        playlist_id (int): Playlist ID.
+    
+    Returns:
+        int | None: Number of stars given by user, or None if no rating or error.
+    """
+    try:
+        with sqlite3.connect(sqlite_db_path) as conn:
+            cur = conn.cursor()
+            cur.execute("""SELECT stars_given FROM playlist_ratings 
+                          WHERE user_id = ? AND playlist_id = ?""", (user_id, playlist_id))
+            result = cur.fetchone()
+            return result[0] if result else None
+    except sqlite3.Error:
+        logger.error(f"Failed to get rating for playlist_id={playlist_id} by user_id={user_id}", exc_info=True)
+        return None

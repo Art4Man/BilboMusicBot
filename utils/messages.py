@@ -21,6 +21,7 @@ class EMOJIS(str, Enum):
     CLOCK = '⏰'
     QUESTION = '?'
     HUG = '🫂'
+    STAR = '⭐'
 
 
 def is_text_starts_with_emoji(text: str) -> bool:
