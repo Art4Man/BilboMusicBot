@@ -120,3 +120,21 @@ def get_playlist_delete_confirmation_keyboard(playlist_name: str):
         row_width=2)
     
     return kb
+
+def get_shared_playlist_keyboard(playlist_id: int):
+    """
+    Build an InlineKeyboardMarkup for shared playlists with a like button.
+    
+    Parameters:
+        playlist_id (int): ID of the shared playlist.
+    
+    Returns:
+        InlineKeyboardMarkup: Keyboard with like button for shared playlist.
+    """
+    inline_keyboard = [
+        [
+            InlineKeyboardButton(text=f"{EMOJIS.STAR.value} Like this Playlist", callback_data=f"like_shared_playlist:{playlist_id}")
+        ]
+    ]
+    kb = InlineKeyboardMarkup(inline_keyboard=inline_keyboard, row_width=1)
+    return kb

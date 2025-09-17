@@ -79,7 +79,117 @@ async def handle_like_playlist(callback: CallbackQuery, bot: Bot):
     await callback.answer()
 
 
-@like_playlist_router.callback_query(F.data.startswith("pay_stars:"))
+@like_playlist_router.callback_query(F.data.startswith("like_shared_playlist:"))
+async def handle_like_shared_playlist(callback: CallbackQuery, bot: Bot):
+    """
+    Handle the "Like this Playlist" callback from shared playlists.
+    """
+    callback_text = get_callback_text_safe(callback)
+    callback_message = get_callback_message(callback)
+    edit_text_message = get_edit_text_message(callback_message)
+    
+    user_id = get_user_id(callback)
+    playlist_id = int(callback_text.split(":", 1)[1])
+    
+    user_db_id = ps.get_user_id(user_id)
+    if user_db_id is None:
+        logger.error(f"Cannot resolve DB user id for telegram_id={user_id}")
+        await edit_text_message(f"{EMOJIS.FAIL.value} Internal error occurred. Please try again.")
+        return await callback.answer()
+    
+    # Check if user has already liked this playlist
+    if ps.user_has_liked_playlist(user_db_id, playlist_id):
+        playlist_name = ps.get_playlist_name_by_id(playlist_id)
+        current_likes = ps.get_playlist_likes_count(playlist_id)
+        total_stars = ps.get_playlist_total_stars(playlist_id)
+        await edit_text_message(
+            f"{EMOJIS.STAR.value} You have already liked this playlist!\n\n"
+            f"{EMOJIS.MUSIC.value} **{playlist_name}**\n"
+            f"{EMOJIS.STAR.value} {current_likes} likes • {total_stars} total stars"
+        )
+        return await callback.answer()
+    
+    playlist_name = ps.get_playlist_name_by_id(playlist_id)
+    if playlist_name is None:
+        await edit_text_message(f"{EMOJIS.FAIL.value} Playlist not found.")
+        return await callback.answer()
+    
+    # Create payment options keyboard
+    payment_keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [
+            InlineKeyboardButton(text=f"{EMOJIS.STAR.value} 1 Star", callback_data=f"pay_stars_shared:1:{playlist_id}"),
+            InlineKeyboardButton(text=f"{EMOJIS.STAR.value} 5 Stars", callback_data=f"pay_stars_shared:5:{playlist_id}")
+        ],
+        [
+            InlineKeyboardButton(text=f"{EMOJIS.STAR.value} 10 Stars", callback_data=f"pay_stars_shared:10:{playlist_id}"),
+            InlineKeyboardButton(text=f"{EMOJIS.FAIL.value} Cancel", callback_data="cancel_payment")
+        ]
+    ])
+    
+    current_likes = ps.get_playlist_likes_count(playlist_id)
+    total_stars = ps.get_playlist_total_stars(playlist_id)
+    
+    await edit_text_message(
+        f"{EMOJIS.STAR.value} **Like with Stars**\n\n"
+        f"{EMOJIS.MUSIC.value} Playlist: **{playlist_name}**\n"
+        f"{EMOJIS.STAR.value} Current: {current_likes} likes • {total_stars} stars\n\n"
+        f"Choose how many stars to contribute:",
+        reply_markup=payment_keyboard
+    )
+    
+    await callback.answer()
+
+
+@like_playlist_router.callback_query(F.data.startswith("pay_stars_shared:"))
+async def handle_pay_stars_shared(callback: CallbackQuery, bot: Bot):
+    """
+    Handle star payment selection for shared playlists.
+    """
+    callback_text = get_callback_text_safe(callback)
+    callback_message = get_callback_message(callback)
+    edit_text_message = get_edit_text_message(callback_message)
+    
+    # Parse callback data: pay_stars_shared:amount:playlist_id
+    parts = callback_text.split(":", 2)
+    if len(parts) != 3:
+        await edit_text_message(f"{EMOJIS.FAIL.value} Invalid payment request.")
+        return await callback.answer()
+    
+    star_amount = int(parts[1])
+    playlist_id = int(parts[2])
+    
+    playlist_name = ps.get_playlist_name_by_id(playlist_id)
+    if playlist_name is None:
+        await edit_text_message(f"{EMOJIS.FAIL.value} Playlist not found.")
+        return await callback.answer()
+    
+    # Create payment button
+    payment_keyboard = InlineKeyboardMarkup(inline_keyboard=[
+        [InlineKeyboardButton(text=f"{EMOJIS.STAR.value} Pay {star_amount} Stars", pay=True)],
+        [InlineKeyboardButton(text=f"{EMOJIS.FAIL.value} Cancel", callback_data="cancel_payment")]
+    ])
+    
+    # Send invoice
+    try:
+        await bot.send_invoice(
+            chat_id=callback.message.chat.id,
+            title=f"Like Playlist: {playlist_name}",
+            description=f"Show your appreciation by contributing {star_amount} stars to this playlist!",
+            payload=f"like_playlist:{playlist_id}:{star_amount}",
+            currency="XTR",  # XTR is the currency code for Telegram Stars
+            prices=[{"label": f"{star_amount} Stars", "amount": star_amount}],
+            reply_markup=payment_keyboard
+        )
+        
+        await edit_text_message(f"{EMOJIS.STAR.value} Payment invoice sent below! Complete the payment to like the playlist.")
+        
+    except Exception as e:
+        logger.error(f"Failed to send invoice: {e}", exc_info=True)
+        await edit_text_message(f"{EMOJIS.FAIL.value} Failed to create payment. Please try again.")
+    
+    await callback.answer()
+
+
 async def handle_pay_stars(callback: CallbackQuery, bot: Bot):
     """
     Handle star payment selection: create and send an invoice.
