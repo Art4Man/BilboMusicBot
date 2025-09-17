@@ -15,6 +15,7 @@ A Telegram bot that allows users to create, manage, and share music playlists ma
 - **Confirmation Dialogs** – Safe playlist deletion with confirmation prompts
 - **Cover Images** – Set custom cover images for your playlists
 - **Playlist Sharing** – Generate shareable links that preview playlists to others
+- **⭐ Telegram Stars Support** – Users can like playlists with Telegram Stars cryptocurrency payments
 
 ### Technical Features
 
@@ -70,6 +71,7 @@ python bot.py
 3. **Add music** – Select "Add Music" from playlist actions, then forward audio files
 4. **Manage playlists** – Use "🎧 My Playlists" to view and manage your collections
 5. **Share playlists** – Generate shareable links that others can preview
+6. **Like playlists** – Support creators by sending 1 Telegram Star per playlist like
 
 ---
 
@@ -78,6 +80,7 @@ python bot.py
 * `users`: `id` (PRIMARY KEY), `telegram_id` (UNIQUE)
 * `playlists`: `id` (PRIMARY KEY), `user_id`, `name`, `cover_file_id`, UNIQUE(user_id, name)
 * `tracks`: `id` (PRIMARY KEY), `playlist_id`, `file_id`, UNIQUE(playlist_id, file_id)
+* `playlist_likes`: `id` (PRIMARY KEY), `user_id`, `playlist_id`, `star_amount`, `transaction_date`, `telegram_payment_charge_id`, UNIQUE(user_id, playlist_id)
 
 ---
 
@@ -102,7 +105,8 @@ AnvaaliMusicBot/
 │       ├── set_cover.py        # Cover image setting
 │       ├── share_playlist.py   # Playlist sharing links
 │       ├── remove_track.py     # Track removal by index
-│       └── remove_playlist.py  # Playlist deletion with confirmation
+│       ├── remove_playlist.py  # Playlist deletion with confirmation
+│       └── playlist_stars.py   # Telegram Stars payment handling
 ├── keyboards/
 │   ├── inline.py               # Inline keyboard builders
 │   └── reply.py                # Reply keyboard builders
@@ -126,6 +130,7 @@ AnvaaliMusicBot/
 - **Keyboards**: Inline and reply keyboards for intuitive UX
 - **Error Handling**: Comprehensive logging and user feedback
 - **Modularity**: Separate routers for each feature area
+- **Payments**: Telegram Stars integration for playlist monetization
 
 ---
 
