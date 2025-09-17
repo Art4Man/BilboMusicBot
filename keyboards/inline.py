@@ -37,6 +37,9 @@ def get_playlist_actions_keyboard(playlist_name: str):
             InlineKeyboardButton(text=f"{EMOJIS.LINK.value} Share Playlist", callback_data=f"share:{playlist_name}")
         ],
         [
+            InlineKeyboardButton(text=f"{EMOJIS.STAR.value} Like with Stars", callback_data=f"like_playlist:{playlist_name}")
+        ],
+        [
         ]
     ]
     kb = InlineKeyboardMarkup(inline_keyboard=inline_keyboard,row_width=2)

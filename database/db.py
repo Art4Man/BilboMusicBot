@@ -36,6 +36,17 @@ def init_db():
                 UNIQUE(playlist_id,file_id),
                 FOREIGN KEY (playlist_id) REFERENCES playlists (id) ON DELETE CASCADE
             )""")
+            cur.execute("""CREATE TABLE IF NOT EXISTS playlist_likes (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER NOT NULL,
+                playlist_id INTEGER NOT NULL,
+                star_amount INTEGER NOT NULL,
+                transaction_id TEXT UNIQUE,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+                UNIQUE(user_id, playlist_id),
+                FOREIGN KEY (user_id) REFERENCES users (id) ON DELETE CASCADE,
+                FOREIGN KEY (playlist_id) REFERENCES playlists (id) ON DELETE CASCADE
+            )""")
     except Exception as e:
         logger.error("Failed to execute table creation queries",exc_info=True)
         raise e

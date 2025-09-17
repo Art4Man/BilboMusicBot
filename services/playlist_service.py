@@ -376,3 +376,91 @@ def rename_playlist(user_id, old_name, new_name):
     else:
         logger.debug(f"Successfully rename {old_name} playlist to {new_name} for user_id = {user_id}") 
         return True
+
+def add_playlist_like(user_id, playlist_id, star_amount, transaction_id):
+    """
+    Add or update a user's like (star contribution) to a playlist.
+    
+    Parameters:
+        user_id (int): Internal user ID who liked the playlist.
+        playlist_id (int): ID of the liked playlist.
+        star_amount (int): Number of stars contributed.
+        transaction_id (str): Unique transaction ID from Telegram.
+    
+    Returns:
+        bool | None: True if the like was added/updated; False if already exists; None on error.
+    """
+    try:
+        with sqlite3.connect(sqlite_db_path) as conn:
+            cur = conn.cursor()
+            cur.execute("""INSERT OR REPLACE INTO playlist_likes 
+                          (user_id, playlist_id, star_amount, transaction_id) 
+                          VALUES (?, ?, ?, ?)""", 
+                       (user_id, playlist_id, star_amount, transaction_id))
+    except sqlite3.Error:
+        logger.error(f"Failed to add like for playlist_id={playlist_id} from user_id={user_id}", exc_info=True)
+        return None
+    else:
+        logger.debug(f"Successfully added like for playlist_id={playlist_id} from user_id={user_id}")
+        return True
+
+def get_playlist_likes_count(playlist_id):
+    """
+    Get the total number of likes (users who contributed stars) for a playlist.
+    
+    Parameters:
+        playlist_id (int): ID of the playlist.
+    
+    Returns:
+        int: Number of unique users who liked the playlist, or 0 on error.
+    """
+    try:
+        with sqlite3.connect(sqlite_db_path) as conn:
+            cur = conn.cursor()
+            cur.execute("SELECT COUNT(*) FROM playlist_likes WHERE playlist_id = ?", (playlist_id,))
+            result = cur.fetchone()
+            return result[0] if result else 0
+    except sqlite3.Error:
+        logger.error(f"Failed to get likes count for playlist_id={playlist_id}", exc_info=True)
+        return 0
+
+def get_playlist_total_stars(playlist_id):
+    """
+    Get the total number of stars contributed to a playlist.
+    
+    Parameters:
+        playlist_id (int): ID of the playlist.
+    
+    Returns:
+        int: Total stars contributed to the playlist, or 0 on error.
+    """
+    try:
+        with sqlite3.connect(sqlite_db_path) as conn:
+            cur = conn.cursor()
+            cur.execute("SELECT SUM(star_amount) FROM playlist_likes WHERE playlist_id = ?", (playlist_id,))
+            result = cur.fetchone()
+            return result[0] if result and result[0] else 0
+    except sqlite3.Error:
+        logger.error(f"Failed to get total stars for playlist_id={playlist_id}", exc_info=True)
+        return 0
+
+def user_has_liked_playlist(user_id, playlist_id):
+    """
+    Check if a user has already liked a specific playlist.
+    
+    Parameters:
+        user_id (int): Internal user ID.
+        playlist_id (int): ID of the playlist.
+    
+    Returns:
+        bool: True if user has liked the playlist, False otherwise.
+    """
+    try:
+        with sqlite3.connect(sqlite_db_path) as conn:
+            cur = conn.cursor()
+            cur.execute("SELECT 1 FROM playlist_likes WHERE user_id = ? AND playlist_id = ?", 
+                       (user_id, playlist_id))
+            return cur.fetchone() is not None
+    except sqlite3.Error:
+        logger.error(f"Failed to check like status for user_id={user_id}, playlist_id={playlist_id}", exc_info=True)
+        return False
