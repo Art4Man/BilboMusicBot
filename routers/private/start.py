@@ -2,6 +2,7 @@ from aiogram import Router, F
 from aiogram.types import Message, InputMediaAudio
 import re
 from keyboards.reply import get_main_menu
+from keyboards.inline import get_shared_playlist_keyboard
 import services.playlist_service as ps
 from utils.logging import get_logger
 from utils.messages import EMOJIS
@@ -64,7 +65,17 @@ async def cmd_start(message: Message):
             pattern=r'([*_`\[\]])',
             repl=r'\\\1', 
             string=playlist_name)
-        await message.answer(f"{EMOJIS.HEADPHONE.value} **{escaped_name}** Playlist shared with you:")
+        
+        # Get likes and stars information
+        likes_count = ps.get_playlist_likes_count(playlist_id)
+        total_stars = ps.get_playlist_total_stars(playlist_id)
+        
+        likes_info = ""
+        if likes_count > 0:
+            likes_info = f"\n{EMOJIS.STAR.value} {likes_count} likes • {total_stars} stars"
+        
+        await message.answer(f"{EMOJIS.HEADPHONE.value} **{escaped_name}** Playlist shared with you:{likes_info}", 
+                             reply_markup=get_shared_playlist_keyboard(playlist_id))
         cover = ps.get_cover_image_by_playlist_id(playlist_id)
         if cover:
             await message.answer_photo(cover, caption=f"{EMOJIS.MUSIC.value} Playlist Cover")

@@ -15,6 +15,8 @@ A Telegram bot that allows users to create, manage, and share music playlists ma
 - **Confirmation Dialogs** – Safe playlist deletion with confirmation prompts
 - **Cover Images** – Set custom cover images for your playlists
 - **Playlist Sharing** – Generate shareable links that preview playlists to others
+- **⭐ Playlist Likes with Stars** – Users can contribute Telegram Stars to like valuable playlists
+- **Community Value Recognition** – See how many people have liked playlists and total stars contributed
 
 ### Technical Features
 
@@ -70,6 +72,8 @@ python bot.py
 3. **Add music** – Select "Add Music" from playlist actions, then forward audio files
 4. **Manage playlists** – Use "🎧 My Playlists" to view and manage your collections
 5. **Share playlists** – Generate shareable links that others can preview
+6. **⭐ Like playlists** – Use "⭐ Like with Stars" to contribute 1, 5, or 10 Telegram Stars to playlists you find valuable
+7. **View community appreciation** – Shared playlists show total likes and stars contributed by the community
 
 ---
 
@@ -78,6 +82,7 @@ python bot.py
 * `users`: `id` (PRIMARY KEY), `telegram_id` (UNIQUE)
 * `playlists`: `id` (PRIMARY KEY), `user_id`, `name`, `cover_file_id`, UNIQUE(user_id, name)
 * `tracks`: `id` (PRIMARY KEY), `playlist_id`, `file_id`, UNIQUE(playlist_id, file_id)
+* `playlist_likes`: `id` (PRIMARY KEY), `user_id`, `playlist_id`, `star_amount`, `transaction_id`, `created_at`, UNIQUE(user_id, playlist_id)
 
 ---
 
