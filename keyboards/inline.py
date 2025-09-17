@@ -117,3 +117,38 @@ def get_playlist_delete_confirmation_keyboard(playlist_name: str):
         row_width=2)
     
     return kb
+
+def get_shared_playlist_keyboard(playlist_id: int, user_has_liked: bool = False):
+    """
+    Create an InlineKeyboardMarkup for shared playlists with like functionality.
+    
+    Creates a keyboard with a like button for users to support playlists with Telegram Stars.
+    The button text changes based on whether the user has already liked the playlist.
+    
+    Parameters:
+        playlist_id (int): Database ID of the playlist.
+        user_has_liked (bool): Whether the current user has already liked this playlist.
+    
+    Returns:
+        InlineKeyboardMarkup: Keyboard with like button for the shared playlist.
+    """
+    if user_has_liked:
+        button_text = f"{EMOJIS.STAR.value} Already Liked"
+        callback_data = f"already_liked:{playlist_id}"
+    else:
+        button_text = f"{EMOJIS.STAR.value} Like Playlist (1 ⭐)"
+        callback_data = f"like_playlist:{playlist_id}"
+    
+    kb = InlineKeyboardMarkup(
+        inline_keyboard=[
+            [
+                InlineKeyboardButton(
+                    text=button_text, 
+                    callback_data=callback_data
+                )
+            ]
+        ],
+        row_width=1
+    )
+    
+    return kb

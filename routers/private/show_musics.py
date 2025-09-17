@@ -56,12 +56,16 @@ async def show_playlist(callback: CallbackQuery):
     
     logger.info(f"User {user_id} is viewing playlist '{playlist_name}'")
 
+    # Get like count for the playlist
+    likes_count = ps.get_playlist_likes_count(playlist_id)
+    likes_text = f" ({likes_count} ⭐)" if likes_count > 0 else ""
+
     playlist_cover_file_id = ps.get_cover_image_by_playlist_id(playlist_id)
     if playlist_cover_file_id:
         await edit_photo_message(media=InputMediaPhoto(media=playlist_cover_file_id))
-        await edit_caption_message(caption=f"{EMOJIS.HEADPHONE.value} Playlist '{playlist_name}' with {len(tracks)} tracks")
+        await edit_caption_message(caption=f"{EMOJIS.HEADPHONE.value} Playlist '{playlist_name}'{likes_text} with {len(tracks)} tracks")
     else:
-        await edit_text_message(f"{EMOJIS.HEADPHONE.value} Playlist '{playlist_name}' with {len(tracks)} tracks")
+        await edit_text_message(f"{EMOJIS.HEADPHONE.value} Playlist '{playlist_name}'{likes_text} with {len(tracks)} tracks")
 
     for i in range(0, len(tracks), 10):
         batch = tracks[i:i + 10]
