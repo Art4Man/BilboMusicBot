@@ -19,21 +19,21 @@ logger = get_logger(__name__)
 star_rating_router = Router()
 
 
-def get_star_amount_keyboard(playlist_name: str):
+def get_star_amount_keyboard(playlist_identifier: str):
     """Create keyboard with different star amounts to give."""
     inline_keyboard = [
         [
-            InlineKeyboardButton(text="1 ⭐", callback_data=f"rate_stars:1:{playlist_name}"),
-            InlineKeyboardButton(text="3 ⭐", callback_data=f"rate_stars:3:{playlist_name}"),
-            InlineKeyboardButton(text="5 ⭐", callback_data=f"rate_stars:5:{playlist_name}")
+            InlineKeyboardButton(text="1 ⭐", callback_data=f"rate_stars:1:{playlist_identifier}"),
+            InlineKeyboardButton(text="3 ⭐", callback_data=f"rate_stars:3:{playlist_identifier}"),
+            InlineKeyboardButton(text="5 ⭐", callback_data=f"rate_stars:5:{playlist_identifier}")
         ],
         [
-            InlineKeyboardButton(text="10 ⭐", callback_data=f"rate_stars:10:{playlist_name}"),
-            InlineKeyboardButton(text="25 ⭐", callback_data=f"rate_stars:25:{playlist_name}"),
-            InlineKeyboardButton(text="50 ⭐", callback_data=f"rate_stars:50:{playlist_name}")
+            InlineKeyboardButton(text="10 ⭐", callback_data=f"rate_stars:10:{playlist_identifier}"),
+            InlineKeyboardButton(text="25 ⭐", callback_data=f"rate_stars:25:{playlist_identifier}"),
+            InlineKeyboardButton(text="50 ⭐", callback_data=f"rate_stars:50:{playlist_identifier}")
         ],
         [
-            InlineKeyboardButton(text="🔙 Back", callback_data=f"back_to_playlist:{playlist_name}")
+            InlineKeyboardButton(text="🔙 Back", callback_data=f"back_to_playlist:{playlist_identifier}")
         ]
     ]
     return InlineKeyboardMarkup(inline_keyboard=inline_keyboard)
@@ -48,7 +48,7 @@ async def handle_give_stars(callback: CallbackQuery):
     callback_message = get_callback_message(callback)
     user_id = get_user_id(callback)
     
-    playlist_name = callback_text.split(":", 1)[1]
+    playlist_identifier = callback_text.split(":", 1)[1]
     
     # Get playlist info for rating stats
     user_db_id = ps.get_user_id(user_id)
@@ -57,9 +57,24 @@ async def handle_give_stars(callback: CallbackQuery):
         await callback.answer("Internal error. Please try /start and retry.", show_alert=True)
         return
     
-    playlist_id = ps.get_playlist_id_by_name(user_db_id, playlist_name)
-    if playlist_id is None:
-        await callback.answer("Playlist not found.", show_alert=True)
+    # Determine if we have a playlist ID or name
+    if playlist_identifier.startswith("id:"):
+        playlist_id = int(playlist_identifier[3:])
+        playlist_name = ps.get_playlist_name_by_id(playlist_id)
+        if playlist_name is None:
+            await callback.answer("Playlist not found.", show_alert=True)
+            return
+    else:
+        playlist_name = playlist_identifier
+        playlist_id = ps.get_playlist_id_by_name(user_db_id, playlist_name)
+        if playlist_id is None:
+            await callback.answer("Playlist not found.", show_alert=True)
+            return
+    
+    # Check if user owns this playlist
+    playlist_owner_id = ps.get_playlist_owner_id(playlist_id)
+    if playlist_owner_id == user_db_id:
+        await callback.answer("You cannot rate your own playlist!", show_alert=True)
         return
     
     # Get rating stats
@@ -78,7 +93,7 @@ async def handle_give_stars(callback: CallbackQuery):
         user_rating_text = f"\n\n🌟 You already gave {user_rating} stars to this playlist!"
     
     await edit_text_message(f"{EMOJIS.STAR.value} Give stars to playlist '{playlist_name}'\n\nSelect how many stars you want to give:{stats_text}{user_rating_text}")
-    await edit_markup_message(reply_markup=get_star_amount_keyboard(playlist_name))
+    await edit_markup_message(reply_markup=get_star_amount_keyboard(playlist_identifier))
     
     await callback.answer()
 
@@ -92,14 +107,14 @@ async def handle_rate_stars(callback: CallbackQuery, bot: Bot):
     callback_message = get_callback_message(callback)
     user_id = get_user_id(callback)
     
-    # Parse callback data: rate_stars:<stars>:<playlist_name>
+    # Parse callback data: rate_stars:<stars>:<playlist_identifier>
     parts = callback_text.split(":", 2)
     if len(parts) != 3:
         await callback.answer("Invalid rating data.", show_alert=True)
         return
     
     stars_amount = int(parts[1])
-    playlist_name = parts[2]
+    playlist_identifier = parts[2]
     
     # Get playlist info
     user_db_id = ps.get_user_id(user_id)
@@ -107,10 +122,19 @@ async def handle_rate_stars(callback: CallbackQuery, bot: Bot):
         await callback.answer("Internal error. Please try /start and retry.", show_alert=True)
         return
     
-    playlist_id = ps.get_playlist_id_by_name(user_db_id, playlist_name)
-    if playlist_id is None:
-        await callback.answer("Playlist not found.", show_alert=True)
-        return
+    # Determine if we have a playlist ID or name
+    if playlist_identifier.startswith("id:"):
+        playlist_id = int(playlist_identifier[3:])
+        playlist_name = ps.get_playlist_name_by_id(playlist_id)
+        if playlist_name is None:
+            await callback.answer("Playlist not found.", show_alert=True)
+            return
+    else:
+        playlist_name = playlist_identifier
+        playlist_id = ps.get_playlist_id_by_name(user_db_id, playlist_name)
+        if playlist_id is None:
+            await callback.answer("Playlist not found.", show_alert=True)
+            return
     
     try:
         # Create Telegram Stars payment invoice
@@ -143,7 +167,22 @@ async def handle_back_to_playlist(callback: CallbackQuery):
     callback_text = get_callback_text_safe(callback)
     callback_message = get_callback_message(callback)
     
-    playlist_name = callback_text.split(":", 1)[1]
+    playlist_identifier = callback_text.split(":", 1)[1]
+    
+    # Determine if we have a playlist ID or name
+    if playlist_identifier.startswith("id:"):
+        playlist_id = int(playlist_identifier[3:])
+        playlist_name = ps.get_playlist_name_by_id(playlist_id)
+        if playlist_name is None:
+            await callback.answer("Playlist not found.", show_alert=True)
+            return
+        # For shared playlists, just show the rating message without full actions
+        edit_text_message = get_edit_text_message(callback_message)
+        await edit_text_message(f"{EMOJIS.STAR.value} Rate this playlist:")
+        await callback.answer()
+        return
+    else:
+        playlist_name = playlist_identifier
     
     edit_text_message = get_edit_text_message(callback_message)
     edit_markup_message = get_edit_markup_message(callback_message)

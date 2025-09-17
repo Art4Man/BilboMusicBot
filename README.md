@@ -10,11 +10,20 @@ A Telegram bot that allows users to create, manage, and share music playlists ma
 
 - **🎧 My Playlists** – View and manage your playlists with interactive buttons
 - **➕ New Playlist** – Create a new playlist with guided prompts
-- **Interactive Actions** – Add music, show tracks, delete, rename, set cover, and share playlists via inline buttons
+- **Interactive Actions** – Add music, show tracks, delete, rename, set cover, share, and rate playlists via inline buttons
 - **Time-Windowed Adding** – Add multiple tracks to a playlist within a configurable time window
 - **Confirmation Dialogs** – Safe playlist deletion with confirmation prompts
 - **Cover Images** – Set custom cover images for your playlists
 - **Playlist Sharing** – Generate shareable links that preview playlists to others
+- **⭐ Telegram Stars Rating** – Rate playlists with Telegram's native cryptocurrency (1-50 stars)
+
+### Telegram Stars Features
+
+- **Cryptocurrency Payments** – Users can give stars using Telegram's native XTR currency
+- **Multiple Rating Options** – Choose from 1, 3, 5, 10, 25, or 50 stars to rate playlists
+- **Rating Statistics** – View average ratings and total star counts on shared playlists
+- **Anti-Self-Rating** – Users cannot rate their own playlists
+- **Transaction Tracking** – All star payments are tracked with Telegram transaction IDs
 
 ### Technical Features
 
@@ -70,6 +79,15 @@ python bot.py
 3. **Add music** – Select "Add Music" from playlist actions, then forward audio files
 4. **Manage playlists** – Use "🎧 My Playlists" to view and manage your collections
 5. **Share playlists** – Generate shareable links that others can preview
+6. **⭐ Rate playlists** – Give stars to playlists you enjoy using Telegram Stars cryptocurrency
+
+### Star Rating System
+
+- **View shared playlists** – Click on shared playlist links to see tracks and ratings
+- **Give stars** – Tap the "⭐ Give Stars" button on playlists you like
+- **Choose amount** – Select from 1, 3, 5, 10, 25, or 50 stars based on how much you enjoyed the playlist
+- **Pay with Telegram Stars** – Complete payment using Telegram's native XTR cryptocurrency
+- **See ratings** – View average star ratings and total counts on all shared playlists
 
 ---
 
@@ -78,6 +96,7 @@ python bot.py
 * `users`: `id` (PRIMARY KEY), `telegram_id` (UNIQUE)
 * `playlists`: `id` (PRIMARY KEY), `user_id`, `name`, `cover_file_id`, UNIQUE(user_id, name)
 * `tracks`: `id` (PRIMARY KEY), `playlist_id`, `file_id`, UNIQUE(playlist_id, file_id)
+* `playlist_ratings`: `id` (PRIMARY KEY), `user_id`, `playlist_id`, `stars_given`, `transaction_id`, `created_at`, UNIQUE(user_id, playlist_id)
 
 ---
 

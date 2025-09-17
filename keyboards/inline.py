@@ -118,3 +118,15 @@ def get_playlist_delete_confirmation_keyboard(playlist_name: str):
         row_width=2)
     
     return kb
+
+
+def get_shared_playlist_keyboard(playlist_name: str):
+    """
+    Create keyboard for shared playlists with star rating option.
+    """
+    inline_keyboard = [
+        [
+            InlineKeyboardButton(text=f"{EMOJIS.STAR.value} Give Stars", callback_data=f"give_stars:{playlist_name}")
+        ]
+    ]
+    return InlineKeyboardMarkup(inline_keyboard=inline_keyboard)

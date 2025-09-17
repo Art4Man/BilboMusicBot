@@ -80,6 +80,10 @@ async def cmd_start(message: Message):
             batch = tracks[i:i+10]
             media = [InputMediaAudio(media=file_id) for file_id in batch]
             await message.answer_media_group(media) # type: ignore
+        
+        # Add Give Stars button for shared playlists
+        from keyboards.inline import get_shared_playlist_keyboard
+        await message.answer(f"{EMOJIS.STAR.value} Rate this playlist:", reply_markup=get_shared_playlist_keyboard(f"id:{playlist_id}"))
     else:
         logger.warning(f"User with '{user_id}' start bot with invalid link, not started with 'share__'.\nStart link: {message_text}")
         return await message.answer(f"{EMOJIS.WARN.value} Unknown start link, so ... Welcome to Playlist Bot! Choose an option:", reply_markup=get_main_menu())

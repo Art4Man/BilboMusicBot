@@ -464,3 +464,24 @@ def get_user_playlist_rating(user_id, playlist_id):
     except sqlite3.Error:
         logger.error(f"Failed to get rating for playlist_id={playlist_id} by user_id={user_id}", exc_info=True)
         return None
+
+
+def get_playlist_owner_id(playlist_id):
+    """
+    Get the owner user ID for a playlist.
+    
+    Parameters:
+        playlist_id (int): Playlist ID.
+    
+    Returns:
+        int | None: Owner user ID or None if not found/error.
+    """
+    try:
+        with sqlite3.connect(sqlite_db_path) as conn:
+            cur = conn.cursor()
+            cur.execute("SELECT user_id FROM playlists WHERE id = ?", (playlist_id,))
+            result = cur.fetchone()
+            return result[0] if result else None
+    except sqlite3.Error:
+        logger.error(f"Failed to get owner for playlist_id={playlist_id}", exc_info=True)
+        return None
